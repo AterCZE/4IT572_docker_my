@@ -62,4 +62,4 @@ jobs:
     steps:
       - name: test
         run: |
-          npm run test
+          npm run test -- --colors
