@@ -1,7 +1,7 @@
 name: Build and tests our Eshop
 
 on:
-  # Trigger the workflow on push or pull request,
+  # Trigger the workflow on push or pull request,s
   # but only for the main branch
   push:
     branches:
