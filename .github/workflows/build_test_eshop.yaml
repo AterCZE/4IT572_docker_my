@@ -55,6 +55,18 @@ jobs:
           npm rebuild node-sass --force
           npm run build -- --colors
 
+      - name: Cache node modules and build folder
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.npm
+            ./node_modules
+            ./build
+          key: ${{ runner.os }}-build-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ github.run_id }}
+
   Test:
     needs: Install
     runs-on: ubuntu-latest
@@ -79,3 +91,25 @@ jobs:
       - name: test
         run: |
           npm run test -- --colors
+
+  Deploy:
+    needs: [Build, Test]
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v2.4.0
+        with:
+          token: ${{ secrets.SECOND_TOKEN }}
+
+      - name: Cache node modules and build folder
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.npm
+            ./node_modules
+            ./build
+          key: ${{ runner.os }}-build-${{ github.run_id }}
+      - name: Deploy to firebase
+        run: ./node_modules/.bin/firebase deploy --token ${{ secrets.FIREBASE_TOKEN }}
