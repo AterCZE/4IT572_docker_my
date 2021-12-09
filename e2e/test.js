@@ -11,7 +11,7 @@ describe('Shopping cart', () => {
     /* Bag should start with 0 products */
     browser.waitForText('.bag__quantity');
     let bagProductsQtd = browser.getText('.bag__quantity');
-    expect(bagProductsQtd).to.equal('0');
+    expect(bagProductsQtd).to.equal('200');
 
     /* Add a product to cart */
     browser.click('.shelf-item');
