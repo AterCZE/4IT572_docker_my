@@ -99,84 +99,24 @@ jobs:
         run: |
           npm run test -- --colors
 
-  Start_EC2:
+  Deploy:
     needs: [Build, Test]
     runs-on: ubuntu-latest
-    hosts: localhost
-    connection: local
     if: ${{ github.ref == 'refs/heads/main' }}
 
     steps:
-      - name: Launch EC2 instance
-        amazon.aws.ec2:
-          instance_type: t2.micro
-          image: ami-04902260ca3d33422
-          region: us-east-1
-          key_name: devops
-          vpc_subnet_id: subnet-0e9ad8aabeff05a66
-          assign_public_ip: yes
-          count: 1
-          group: eshop
-          wait: true
-          aws_access_key: '{{access_key}}'
-          aws_secret_key: '{{secret_key}}'
-          security_token: '{{session_token}}'
-        register: ec2
+      - name: Git Checkout
+        uses: actions/checkout@v2.4.0
+        with:
+          token: ${{ secrets.SECOND_TOKEN }}
 
-      - name: Add new instance to host group
-        add_host:
-          hostname: '{{ item.public_ip }}'
-          groupname: launched
-        loop: '{{ ec2.instances }}'
-
-      - name: Wait for SSH to come up
-        delegate_to: '{{ item.public_dns_name }}'
-        wait_for_connection:
-          delay: 30
-          timeout: 300
-        loop: '{{ ec2.instances }}'
-
-  Configure_EC2:
-    needs: [Build, Test, Start_EC2]
-    runs-on: ubuntu-latest
-    hosts: launched
-    connection: ssh
-    if: ${{ github.ref == 'refs/heads/main' }}
-
-    steps:
-      - name: Add Centos Extras
-        shell: yum-config-manager --enable extras
-        become: yes
-      - name: Enable docker package
-        shell: amazon-linux-extras enable docker
-        become: yes
-      - name: Install Docker and Git
-        yum:
-          name:
-            - docker
-            - git
-          state: latest
-          update_cache: yes
-        become: yes
-      - service:
-          name: docker
-          state: started
-          enabled: yes
-        become: yes
-      - name: Set rights to Docker
-        shell: usermod -a -G docker ec2-user
-        become: yes
-      - name: Checkout Git repo
-        git:
-          repo: 'https://github.com/AterCZE/4IT572_docker_my'
-          dest: ./app
-      - name: Build eshop docker
-        shell: cd app && docker build -t eshop:latest .
-        become: yes
-      - name: Run eshop
-        shell: docker run -p 80:3000 eshop
-        async: 45
-        poll: 0
-        become: yes
-      - wait_for:
-          port: 80
+      - name: Cache node modules and build folder
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.npm
+            ./node_modules
+            ./build
+          key: ${{ runner.os }}-build-${{ github.run_id }}
+      - name: Deploy to firebase
+        run: ./node_modules/.bin/firebase deploy --token ${{ secrets.FIREBASE_TOKEN }}
