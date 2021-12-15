@@ -7,7 +7,7 @@
 
 - Source code of the React app is based on "react-shopping-cart" app made under MIT license by Jefferson Ribeiro
 
-#### Requirements
+#### Requirementsssss
 
 - Node.js
 - NPM
